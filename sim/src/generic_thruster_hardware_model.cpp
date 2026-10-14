@@ -1,4 +1,4 @@
-#include <generic_thruster_42_data_provider.hpp>
+#include <generic_thruster_command_provider.hpp>
 #include <generic_thruster_hardware_model.hpp>
 
 namespace Nos3
@@ -186,12 +186,20 @@ namespace Nos3
 
             if (valid == GENERIC_THRUSTER_SIM_SUCCESS)
             {   
-                out_data = in_data;
-                dynamic_cast<Generic_thruster42DataProvider*>(_generic_thruster_dp)->cmd_thrust(in_data[2], (double)in_data[3]);
+                GenericThrusterCommandProvider* provider =
+                    dynamic_cast<GenericThrusterCommandProvider*>(_generic_thruster_dp);
+                // The legacy 42 provider has no acknowledged delivery contract.
+                // Never echo a successful command that the backend did not accept.
+                if (provider && provider->cmd_thrust(in_data[2], double(in_data[3])))
+                    out_data = in_data;
+                else {
+                    valid = GENERIC_THRUSTER_SIM_ERROR;
+                    sim_logger->error("Thruster command unavailable or rejected by backend");
+                }
             }
         }
 
-        /* Echo command since format valid */
+        /* Echo only after backend acknowledgement; otherwise the flight driver times out. */
         if (valid == GENERIC_THRUSTER_SIM_SUCCESS)
         {
             sim_logger->debug("Generic_thrusterHardwareModel::uart_read_callback:  REPLY %s",
