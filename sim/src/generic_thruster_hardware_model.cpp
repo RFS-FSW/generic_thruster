@@ -188,8 +188,7 @@ namespace Nos3
             {   
                 GenericThrusterCommandProvider* provider =
                     dynamic_cast<GenericThrusterCommandProvider*>(_generic_thruster_dp);
-                // The legacy 42 provider has no acknowledged delivery contract.
-                // Never echo a successful command that the backend did not accept.
+                // Echo only after local transport delivery; native BSK has no execution ACK.
                 if (provider && provider->cmd_thrust(in_data[2], double(in_data[3])))
                     out_data = in_data;
                 else {
@@ -199,7 +198,7 @@ namespace Nos3
             }
         }
 
-        /* Echo only after backend acknowledgement; otherwise the flight driver times out. */
+        /* Echo after transport delivery; otherwise the flight driver times out. */
         if (valid == GENERIC_THRUSTER_SIM_SUCCESS)
         {
             sim_logger->debug("Generic_thrusterHardwareModel::uart_read_callback:  REPLY %s",
